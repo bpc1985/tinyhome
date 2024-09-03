@@ -1,9 +1,9 @@
 import { List, Typography } from "antd";
-import { Bookings as User_user_bookings } from "src/__generated__/graphql";
+import { UserQuery as User } from "src/__generated__/graphql";
 import { ListingCard } from "../../../../lib/components";
 
 interface UserBookingsProps {
-  userBookings?: User_user_bookings;
+  userBookings: User["user"]["bookings"];
   page: number;
   limit: number;
   setBookingsPage: (page: number) => void;

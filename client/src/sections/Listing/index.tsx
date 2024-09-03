@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 import { useQuery } from "@apollo/client";
-import { Moment } from "moment";
+import { Dayjs } from "dayjs";
 import { Col, Layout, Row } from "antd";
 import { ErrorBanner, PageSkeleton } from "../../lib/components";
 import { LISTING } from "../../lib/graphql/queries";
@@ -13,7 +13,7 @@ import {
 import {
   ListingBookings,
   ListingCreateBooking,
-  WrappedListingCreateBookingModal as ListingCreateBookingModal,
+  ListingCreateBookingModal,
   ListingDetails,
 } from "./components";
 
@@ -27,8 +27,8 @@ const PAGE_LIMIT = 3;
 export const Listing = ({ viewer }: Props) => {
   const { listingId } = useParams();
   const [bookingsPage, setBookingsPage] = useState(1);
-  const [checkInDate, setCheckInDate] = useState<Moment | null>(null);
-  const [checkOutDate, setCheckOutDate] = useState<Moment | null>(null);
+  const [checkInDate, setCheckInDate] = useState<Dayjs | null>(null); // Use Dayjs type instead of Moment
+  const [checkOutDate, setCheckOutDate] = useState<Dayjs | null>(null); // Use Dayjs type instead of Moment
   const [modalVisible, setModalVisible] = useState(false);
 
   const { loading, data, error, refetch } = useQuery<

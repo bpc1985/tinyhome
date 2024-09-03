@@ -1,8 +1,17 @@
 import { Button, Card, DatePicker, Divider, Typography } from "antd";
-import moment, { Moment } from "moment";
+import dayjs, { Dayjs } from "dayjs";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import dayOfYear from "dayjs/plugin/dayOfYear";
 import { displayErrorMessage, formatListingPrice } from "../../../../lib/utils";
 import { ListingQuery as ListingData, Viewer } from "src/__generated__/graphql";
 import { BookingsIndex } from "./types";
+
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
+dayjs.extend(customParseFormat);
+dayjs.extend(dayOfYear);
 
 const { Paragraph, Text, Title } = Typography;
 
@@ -11,10 +20,10 @@ interface Props {
   host: ListingData["listing"]["host"];
   price: number;
   bookingsIndex: ListingData["listing"]["bookingsIndex"];
-  checkInDate: Moment | null;
-  checkOutDate: Moment | null;
-  setCheckInDate: (checkInDate: Moment | null) => void;
-  setCheckOutDate: (checkOutDate: Moment | null) => void;
+  checkInDate: Dayjs | null;
+  checkOutDate: Dayjs | null;
+  setCheckInDate: (checkInDate: Dayjs | null) => void;
+  setCheckOutDate: (checkOutDate: Dayjs | null) => void;
   setModalVisible: (modalVisible: boolean) => void;
 }
 
@@ -31,10 +40,10 @@ export const ListingCreateBooking = ({
 }: Props) => {
   const bookingsIndexJSON: BookingsIndex = JSON.parse(bookingsIndex);
 
-  const dateIsBooked = (currentDate: Moment) => {
-    const year = moment(currentDate).year();
-    const month = moment(currentDate).month();
-    const day = moment(currentDate).date();
+  const dateIsBooked = (currentDate: Dayjs) => {
+    const year = currentDate.year();
+    const month = currentDate.month();
+    const day = currentDate.date();
 
     if (bookingsIndexJSON[year] && bookingsIndexJSON[year][month]) {
       return Boolean(bookingsIndexJSON[year][month][day]);
@@ -43,18 +52,18 @@ export const ListingCreateBooking = ({
     }
   };
 
-  const disabledDate = (currentDate?: Moment) => {
+  const disabledDate = (currentDate?: Dayjs) => {
     if (currentDate) {
-      const dateIsBeforeEndOfDay = currentDate.isBefore(moment().endOf("day"));
+      const dateIsBeforeEndOfDay = currentDate.isBefore(dayjs().endOf("day"));
       return dateIsBeforeEndOfDay || dateIsBooked(currentDate);
     } else {
       return false;
     }
   };
 
-  const verifyAndSetCheckOutDate = (selectedCheckOutDate: Moment | null) => {
+  const verifyAndSetCheckOutDate = (selectedCheckOutDate: Dayjs | null) => {
     if (checkInDate && selectedCheckOutDate) {
-      if (moment(selectedCheckOutDate).isBefore(checkInDate, "days")) {
+      if (selectedCheckOutDate.isBefore(checkInDate, "day")) {
         return displayErrorMessage(
           `You can't book date of check out to be prior to check in!`
         );
@@ -62,12 +71,12 @@ export const ListingCreateBooking = ({
 
       let dateCursor = checkInDate;
 
-      while (moment(dateCursor).isBefore(selectedCheckOutDate, "days")) {
-        dateCursor = moment(dateCursor).add(1, "days");
+      while (dateCursor.isBefore(selectedCheckOutDate, "day")) {
+        dateCursor = dateCursor.add(1, "day");
 
-        const year = moment(dateCursor).year();
-        const month = moment(dateCursor).month();
-        const day = moment(dateCursor).date();
+        const year = dateCursor.year();
+        const month = dateCursor.month();
+        const day = dateCursor.date();
 
         if (
           bookingsIndexJSON[year] &&

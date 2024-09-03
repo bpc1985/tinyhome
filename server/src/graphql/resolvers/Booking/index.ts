@@ -95,7 +95,6 @@ export const bookingResolvers = {
           );
         }
 
-        console.log(host.walletId);
         await Stripe.charge(totalPrice, source, host.walletId);
 
         const insertRes = await db.bookings.insertOne({

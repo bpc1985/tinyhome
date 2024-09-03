@@ -1,10 +1,11 @@
-import moment, { Moment } from "moment";
+import dayjs, { Dayjs } from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import relativeTime from "dayjs/plugin/relativeTime"; // For diff calculation
+import advancedFormat from "dayjs/plugin/advancedFormat"; // For formatting like "MMMM Do YYYY"
 import { useMutation } from "@apollo/client";
-import {
-  CardElement,
-  injectStripe,
-  ReactStripeElements,
-} from "react-stripe-elements";
+import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { CREATE_BOOKING } from "../../../../lib/graphql/mutations";
 import {
   CreateBookingMutation as CreateBookingData,
@@ -18,12 +19,18 @@ import {
   formatListingPrice,
 } from "../../../../lib/utils";
 
+dayjs.extend(customParseFormat);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
+dayjs.extend(relativeTime);
+dayjs.extend(advancedFormat);
+
 interface Props {
   id: string;
   price: number;
   modalVisible: boolean;
-  checkInDate: Moment;
-  checkOutDate: Moment;
+  checkInDate: Dayjs;
+  checkOutDate: Dayjs;
   setModalVisible: (modalVisible: boolean) => void;
   clearBookingData: () => void;
   handleListingRefetch: () => Promise<void>;
@@ -40,8 +47,10 @@ export const ListingCreateBookingModal = ({
   setModalVisible,
   clearBookingData,
   handleListingRefetch,
-  stripe,
-}: Props & ReactStripeElements.InjectedStripeProps) => {
+}: Props) => {
+  const stripe = useStripe();
+  const elements = useElements();
+
   const [createBooking, { loading }] = useMutation<
     CreateBookingData,
     CreateBookingVariables
@@ -61,25 +70,34 @@ export const ListingCreateBookingModal = ({
     },
   });
 
-  const daysBooked = checkOutDate.diff(checkInDate, "days") + 1;
+  const daysBooked = checkOutDate.diff(checkInDate, "day") + 1;
   const listingPrice = price * daysBooked;
 
   const handleCreateBooking = async () => {
-    if (!stripe) {
+    if (!stripe || !elements) {
       return displayErrorMessage(
         "Sorry! We weren't able to connect with Stripe."
       );
     }
 
-    const { token: stripeToken, error } = await stripe.createToken();
-    if (stripeToken) {
+    const cardElement = elements.getElement(CardElement);
+
+    if (!cardElement) {
+      return displayErrorMessage(
+        "Sorry! We weren't able to find the card element."
+      );
+    }
+
+    const { token, error } = await stripe.createToken(cardElement);
+
+    if (token) {
       createBooking({
         variables: {
           input: {
             id,
-            source: stripeToken.id,
-            checkIn: moment(checkInDate).format("YYYY-MM-DD"),
-            checkOut: moment(checkOutDate).format("YYYY-MM-DD"),
+            source: token.id,
+            checkIn: dayjs(checkInDate).format("YYYY-MM-DD"),
+            checkOut: dayjs(checkOutDate).format("YYYY-MM-DD"),
           },
         },
       });
@@ -94,7 +112,7 @@ export const ListingCreateBookingModal = ({
 
   return (
     <Modal
-      visible={modalVisible}
+      open={modalVisible}
       centered
       footer={null}
       onCancel={() => setModalVisible(false)}
@@ -111,11 +129,11 @@ export const ListingCreateBookingModal = ({
             Enter your payment information to book the listing from the dates
             between{" "}
             <Text mark strong>
-              {moment(checkInDate).format("MMMM Do YYYY")}
+              {dayjs(checkInDate).format("MMMM Do YYYY")}
             </Text>{" "}
             and{" "}
             <Text mark strong>
-              {moment(checkOutDate).format("MMMM Do YYYY")}
+              {dayjs(checkOutDate).format("MMMM Do YYYY")}
             </Text>
             , inclusive.
           </Paragraph>
@@ -137,7 +155,7 @@ export const ListingCreateBookingModal = ({
 
         <div className="listing-booking-modal__stripe-card-section">
           <CardElement
-            hidePostalCode
+            options={{ hidePostalCode: true }}
             className="listing-booking-modal__stripe-card"
           />
           <Button
@@ -154,7 +172,3 @@ export const ListingCreateBookingModal = ({
     </Modal>
   );
 };
-
-export const WrappedListingCreateBookingModal = injectStripe(
-  ListingCreateBookingModal
-);

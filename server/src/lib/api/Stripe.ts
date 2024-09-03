@@ -14,6 +14,7 @@ export const Stripe = {
     return response;
   },
   charge: async (amount: number, source: string, stripeAccount: string) => {
+    console.log(amount, source, stripeAccount);
     /* eslint-disable @typescript-eslint/camelcase */
     const res = await client.charges.create(
       {

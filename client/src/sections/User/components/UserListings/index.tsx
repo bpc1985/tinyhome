@@ -1,9 +1,9 @@
 import { List, Typography } from "antd";
 import { ListingCard } from "../../../../lib/components/ListingCard";
-import { Listings as User_user_listings } from "src/__generated__/graphql";
+import { UserQuery as User } from "src/__generated__/graphql";
 
 interface UserListingsProps {
-  userListings: User_user_listings;
+  userListings: User["user"]["listings"];
   page: number;
   limit: number;
   setListingsPage: (page: number) => void;

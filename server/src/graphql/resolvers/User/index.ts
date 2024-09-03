@@ -20,7 +20,7 @@ export const userResolvers = {
         const user = await db.users.findOne({ _id: id });
 
         if (!user) {
-          throw new Error("user can't be found");
+          throw new Error("User can't be found");
         }
 
         const viewer = await authorize(db, req);
@@ -60,17 +60,18 @@ export const userResolvers = {
           result: [],
         };
 
-        let cursor = await db.bookings.find({
+        // Use countDocuments for the total count
+        data.total = await db.bookings.countDocuments({
           _id: { $in: user.bookings },
         });
 
-        // page = 1; limit = 10; cursor starts at 0
-        // page = 2; limit = 10; cursor starts at 10
-        // page = 3; limit = 10; cursor starts at 20
-        cursor = cursor.skip(page > 0 ? (page - 1) * limit : 0);
-        cursor = cursor.limit(limit);
+        const cursor = db.bookings
+          .find({
+            _id: { $in: user.bookings },
+          })
+          .skip(page > 0 ? (page - 1) * limit : 0)
+          .limit(limit);
 
-        data.total = await cursor.count();
         data.result = await cursor.toArray();
 
         return data;
@@ -89,14 +90,18 @@ export const userResolvers = {
           result: [],
         };
 
-        let cursor = await db.listings.find({
+        // Use countDocuments for the total count
+        data.total = await db.listings.countDocuments({
           _id: { $in: user.listings },
         });
 
-        cursor = cursor.skip(page > 0 ? (page - 1) * limit : 0);
-        cursor = cursor.limit(limit);
+        const cursor = db.listings
+          .find({
+            _id: { $in: user.listings },
+          })
+          .skip(page > 0 ? (page - 1) * limit : 0)
+          .limit(limit);
 
-        data.total = await cursor.count();
         data.result = await cursor.toArray();
 
         return data;

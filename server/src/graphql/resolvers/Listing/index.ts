@@ -87,7 +87,7 @@ export const listingResolvers = {
           data.region = `${cityText}${adminText}${country}`;
         }
 
-        let cursor = await db.listings.find(query);
+        let cursor = db.listings.find(query);
 
         if (filter && filter === ListingsFilter.PRICE_LOW_TO_HIGH) {
           cursor = cursor.sort({ price: 1 });
@@ -100,7 +100,8 @@ export const listingResolvers = {
         cursor = cursor.skip(page > 0 ? (page - 1) * limit : 0);
         cursor = cursor.limit(limit);
 
-        data.total = await cursor.count();
+        // Use countDocuments for the total count
+        data.total = await db.listings.countDocuments(query);
         data.result = await cursor.toArray();
 
         return data;
@@ -186,14 +187,18 @@ export const listingResolvers = {
           result: [],
         };
 
-        let cursor = await db.bookings.find({
+        // Use countDocuments for the total count
+        data.total = await db.bookings.countDocuments({
           _id: { $in: listing.bookings },
         });
 
-        cursor = cursor.skip(page > 0 ? (page - 1) * limit : 0);
-        cursor = cursor.limit(limit);
+        const cursor = db.bookings
+          .find({
+            _id: { $in: listing.bookings },
+          })
+          .skip(page > 0 ? (page - 1) * limit : 0)
+          .limit(limit);
 
-        data.total = await cursor.count();
         data.result = await cursor.toArray();
 
         return data;
